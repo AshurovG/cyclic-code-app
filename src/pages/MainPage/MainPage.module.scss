@@ -1,0 +1,50 @@
+.main__page {
+    background-color: inherit;
+    color: #fff;
+    padding-top: 30px;
+
+    &-wrapper {
+        max-width: 1240px;
+        // height: 100%;
+        margin: 0 auto;
+    }
+}
+
+
+.form {
+    gap: 30px;
+    width: 70%;
+    margin: 0 auto;
+
+    &__input {
+        height: 60px;
+        width: 500px;
+        margin-bottom: 20px;
+        border-color: #000;
+        font-size: 18px;
+
+        &-block {
+            display: flex;
+            gap: 20px;
+        }
+
+        &:focus {
+            box-shadow: none;
+        }
+    }
+
+    &__btns {
+        display: flex;
+        gap: 10px;
+        height: 60px;
+    }
+
+    &_btn {
+        background-color: #2787F5;
+        padding: 15px 40px;
+        border-color: #000;
+        font-size: 18px;
+        height: 60px;
+        width: 200px;
+    }
+}
