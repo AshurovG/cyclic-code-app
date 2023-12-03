@@ -22,20 +22,11 @@ const MainPage = () => {
     }
   }
 
-  const encode = (value: string) => {
-    let codeArr = codeStringValue.split('').map((element) => {
-      return (Number(element))
-    })
-
-    checkFirstNumbers(codeArr)
-
-    codeArr.push(0, 0, 0, 0)
-    console.log(codeArr)
-
+  const division = (divisible: Array<number>) => {
     let currentIndex = 0;
     let isExistSymbols = true;
     let currentQuotient = [];
-    let currentCodeArr = codeArr.slice(currentIndex,currentIndex + 5);
+    let currentCodeArr = divisible.slice(currentIndex,currentIndex + 5);
     currentIndex = 4
     while (isExistSymbols) {
       currentQuotient = [currentCodeArr[0] ^ divider[0], currentCodeArr[1] ^ divider[1], currentCodeArr[2] ^ divider[2]
@@ -47,16 +38,29 @@ const MainPage = () => {
 
       while (currentQuotient.length !== 5) {
         console.log(' qqq1', currentQuotient, currentIndex)
-        if (currentIndex + 1 >= codeArr.length) {
-          return(currentQuotient)
+        if (currentIndex + 1 >= divisible.length) {
+          return(currentQuotient) // Возвращаем остаток от деления многочленов
         }
-        currentQuotient.push(codeArr[currentIndex + 1]);
+        currentQuotient.push(divisible[currentIndex + 1]);
         ++currentIndex;
         console.log(' qqq2', currentQuotient, currentIndex)
       }
       console.log(`текущее частное чисел ${currentCodeArr.join('')} на ${divider.join('')}  - ${currentQuotient}`)
       currentCodeArr = currentQuotient;
     }
+  }
+
+  const encode = (value: string) => {
+    let codeArr = codeStringValue.split('').map((element) => {
+      return (Number(element))
+    })
+
+    checkFirstNumbers(codeArr)
+
+    codeArr.push(0, 0, 0, 0)
+    console.log(codeArr)
+
+    console.log('ttettetettte', division(codeArr))
   }
 
   const handleTestButtonClick = () => {
