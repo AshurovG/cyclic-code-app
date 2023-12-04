@@ -6,7 +6,7 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Table from 'components/Table';
 
-const pol = '1011';
+const generatingPolynomial = '1011';
 const errorVectors: Map<number, string> = new Map([
   [0, '1'],
   [1, '10'],
@@ -17,28 +17,8 @@ const errorVectors: Map<number, string> = new Map([
   [6, '1000000']
  ]);
 
- const syndromeVectors: Map<string, number> = new Map([
-  ['001', 0],
-  ['010', 1],
-  ['100', 2],
-  ['011', 3],
-  ['110', 4],
-  ['111', 5],
-  ['101', 6]
- ]);
+const syndromeVectors = ['001', '010', '100', '011', '110', '111', '101']
  
-
- 
-//  const errorVectors: Map<number, string> = new Map([
-//   [0, '0'],
-//   [1, '010'],
-//   [2, '100'],
-//   [3, '011'],
-//   [4, '110'],
-//   [5, '111'],
-//   [6, '101']
-//  ]);
-
 export type TableData = {
   multiplicity: number;
   totalErrorsCount: number;
@@ -48,7 +28,7 @@ export type TableData = {
 
 export type RandomErrorData = {
   errorIndex: number,
-  value: number
+  value: string
 }
 
 const MainPage = () => {
@@ -56,8 +36,10 @@ const MainPage = () => {
   const [valueWithError, setValueWithError] = useState<RandomErrorData>();
   const [errorVector, setErrorVector] = useState('');
   const [acceptedVector, setAcceptedVector] = useState('');
+  const [errorSyndrome, setErrorSyndrome] = useState('');
   const [table, setTable] = useState<TableData[]>([])
   const [isTestButtonClicked, setIsTestButtonClicked] = useState(false)
+  const [correctedCode, setCorrectedCode] = useState('')
 
   function factorial(n: any) {
     let result = 1;
@@ -131,12 +113,12 @@ const MainPage = () => {
 
   const setRandomError = () => {
     let randomNumber = Math.floor(Math.random() * 7);
-    let errorCodeArr = coding(codeStringValue, pol).split('')
+    let errorCodeArr = coding(codeStringValue, generatingPolynomial).split('')
     console.log(errorCodeArr)
     console.log('-------------')
     errorCodeArr[randomNumber] = errorCodeArr[randomNumber] === '0' ? '1': '0';
-    setValueWithError({errorIndex: errorCodeArr.length - 1 - randomNumber, value: Number(errorCodeArr.join(''))})
-    decode({errorIndex: errorCodeArr.length - 1 - randomNumber, value: Number(errorCodeArr.join(''))})
+    setValueWithError({errorIndex: errorCodeArr.length - 1 - randomNumber, value: errorCodeArr.join('')})
+    decode({errorIndex: errorCodeArr.length - 1 - randomNumber, value: errorCodeArr.join('')})
   }
 
   const getAcceptedPolynomial = (first: string, second: string): string => {
@@ -162,11 +144,26 @@ const MainPage = () => {
       let accepted;
       if (vector !== undefined) {
         setErrorVector(vector);
-        accepted = getAcceptedPolynomial(coding(codeStringValue, pol), vector) // формируем принятый полином
+        accepted = getAcceptedPolynomial(coding(codeStringValue, generatingPolynomial), vector) // формируем принятый полином
         setAcceptedVector(accepted)
+        console.log('принятый на пораждающий', division(accepted, generatingPolynomial))
+
+        const syndrome = division(accepted, generatingPolynomial);
+        if (syndrome !== 0) {
+          setErrorSyndrome(syndrome);
+          let errorValue = error.value.split('')
+          const index = syndromeVectors.indexOf(syndrome)
+          console.log("до", error.value)
+          if (errorValue[errorValue.length - 1 - index] === '0') {
+            errorValue[errorValue.length - 1 - index] = '1'
+          } else {
+            errorValue[errorValue.length - 1 - index] = '0'
+          }
+          setCorrectedCode(errorValue.join('')) // Устанавливаем исправленный код
+        }
       }
       console.log('accepted', accepted)
-      console.log(coding(codeStringValue, pol), '+', errorVectors.get(error.errorIndex))
+      console.log(coding(codeStringValue, generatingPolynomial), '+', errorVectors.get(error.errorIndex))
     }
   }
   
@@ -174,12 +171,11 @@ const MainPage = () => {
   const handleTestButtonClick = () => {
     setIsTestButtonClicked(true)
     setRandomError();
-    // console.log('res', getAcceptedPolynomial('1010011', '100000'))
   }
 
   const handleBuildButtonClick = () => {
-    let encoded_vec = coding(codeStringValue, pol);
-    let Res = errors(encoded_vec, pol);
+    let encoded_vec = coding(codeStringValue, generatingPolynomial);
+    let Res = errors(encoded_vec, generatingPolynomial);
     console.log(Res)
     let result: TableData[] = []
     for (let i in Res) {
@@ -216,10 +212,13 @@ const MainPage = () => {
         </div>
       </Form>
      { isTestButtonClicked && <><h4 className={styles['main__page-subtitle']}>Исходный код: {codeStringValue}</h4>
-      <h4 className={styles['main__page-subtitle']}>Закодированный код: {coding(codeStringValue, pol)}</h4>
+      <h4 className={styles['main__page-subtitle']}>Закодированный код: {coding(codeStringValue, generatingPolynomial)}</h4>
       <h4 className={styles['main__page-subtitle']}>Случайная ошибка в {valueWithError?.errorIndex} разряде: {valueWithError?.value}</h4>
       <h4 className={styles['main__page-subtitle']}>Вектор ошибки: {errorVector}</h4>
       <h4 className={styles['main__page-subtitle']}>Принятый полином: {acceptedVector}</h4>
+      <h4 className={styles['main__page-subtitle']}>После деления принятого полинома на порождающий получили синдром ошибки: {errorSyndrome}</h4>
+      <h4 className={styles['main__page-subtitle']}>Исправили код после обнаружения ошибки: {correctedCode}</h4>
+
       </>}
       {table.length === 7 && 
       <div>
@@ -232,58 +231,3 @@ const MainPage = () => {
 }
 
 export default MainPage
-
-
-  // const encode = () => {
-  //   let codeArr = codeStringValue.split('').map((element) => {
-  //     return (Number(element))
-  //   })
-
-  //   checkFirstNumbers(codeArr)
-
-  //   codeArr.push(0, 0, 0, 0) // Добавляем проверочные биты
-  //   console.log('Число с проверочными битами:', codeArr)
-
-  //   let remainder = division(codeArr)
-
-  //   while (remainder?.length !== 4) {
-  //     remainder?.unshift(0)
-  //   }
-
-  //   let currentReminderIndex = 0;
-  //   for (let i = codeArr.length - 4; i < codeArr.length; ++i) {
-  //     codeArr[i] = remainder[currentReminderIndex];
-  //     ++currentReminderIndex;
-  //   }
-  //   console.log(`Сложили ${codeArr}`)
-
-  //   return codeArr
-  // }
-
-    // const division = (divisible: Array<number>) => {
-  //   let currentIndex = 0;
-  //   let isExistSymbols = true;
-  //   let currentRemainder = [];
-  //   let currentCodeArr = divisible.slice(currentIndex,currentIndex + 5);
-  //   currentIndex = 4
-  //   while (isExistSymbols) {
-  //     currentRemainder = [currentCodeArr[0] ^ divider[0], currentCodeArr[1] ^ divider[1], currentCodeArr[2] ^ divider[2]
-  //     , currentCodeArr[3] ^ divider[3], currentCodeArr[4] ^ divider[4]]
-  //     console.log(`Поделили ${currentCodeArr} на ${divider} = ${currentRemainder}`)
-  //     checkFirstNumbers(currentRemainder)
-
-  //     console.log('current q', currentRemainder)
-
-  //     while (currentRemainder.length !== 5) {
-  //       console.log(' qqq1', currentRemainder, currentIndex)
-  //       if (currentIndex + 1 >= divisible.length) {
-  //         return(currentRemainder) // Возвращаем остаток от деления многочленов
-  //       }
-  //       currentRemainder.push(divisible[currentIndex + 1]);
-  //       ++currentIndex;
-  //       console.log(' qqq2', currentRemainder, currentIndex)
-  //     }
-  //     console.log(`текущее частное чисел ${currentCodeArr.join('')} на ${divider.join('')}  - ${currentRemainder}`)
-  //     currentCodeArr = currentRemainder;
-  //   }
-  // }
