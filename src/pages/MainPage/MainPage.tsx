@@ -6,8 +6,38 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button'
 import Table from 'components/Table';
 
-let inf_vec = '1010';
-let pol = '1011';
+const pol = '1011';
+const errorVectors: Map<number, string> = new Map([
+  [0, '1'],
+  [1, '10'],
+  [2, '100'],
+  [3, '1000'],
+  [4, '10000'],
+  [5, '100000'],
+  [6, '1000000']
+ ]);
+
+ const syndromeVectors: Map<string, number> = new Map([
+  ['001', 0],
+  ['010', 1],
+  ['100', 2],
+  ['011', 3],
+  ['110', 4],
+  ['111', 5],
+  ['101', 6]
+ ]);
+ 
+
+ 
+//  const errorVectors: Map<number, string> = new Map([
+//   [0, '0'],
+//   [1, '010'],
+//   [2, '100'],
+//   [3, '011'],
+//   [4, '110'],
+//   [5, '111'],
+//   [6, '101']
+//  ]);
 
 export type TableData = {
   multiplicity: number;
@@ -16,24 +46,18 @@ export type TableData = {
   result: number;
 }
 
+export type RandomErrorData = {
+  errorIndex: number,
+  value: number
+}
+
 const MainPage = () => {
-  const [codeStringValue, setCodeStringValue] = useState('')
-  const [codeArrayValue, setCodeArrayValue] = useState([])
-
+  const [codeStringValue, setCodeStringValue] = useState('');
+  const [valueWithError, setValueWithError] = useState<RandomErrorData>();
+  const [errorVector, setErrorVector] = useState('');
+  const [acceptedVector, setAcceptedVector] = useState('');
   const [table, setTable] = useState<TableData[]>([])
-
-  const [combinations, setCombinations] = useState(0)
-
-  const checkFirstNumbers = (array: Array<Number>) => {
-    let isFirstElementCorrect = false;
-    while (!isFirstElementCorrect) {
-      if (array[0] !== 0) {
-        isFirstElementCorrect = true;
-      } else {
-        array.shift()
-      }
-    }
-  }
+  const [isTestButtonClicked, setIsTestButtonClicked] = useState(false)
 
   function factorial(n: any) {
     let result = 1;
@@ -43,7 +67,7 @@ const MainPage = () => {
     return result;
   }
 
-  function* error_gen(length: number) {
+  function* errorGenerator(length: number) { // Генератор всевозможных ошибок
     function* helper(index: number, current: any): any {
       if (index === length) {
         yield parseInt(current.join(''), 10).toString();
@@ -55,17 +79,15 @@ const MainPage = () => {
     yield* helper(0, []);
   }
 
-  function errors(vec: string, pol: string) {
-    //  let Res = Array(7).fill(0);
+  function errors(vec: string, pol: string) { // Определение чисел обнаруженных ошибок
     let Res: any = {};
     for (let i = 1; i <= 7; i++) {
       Res[i] = 0;
     }
      console.log('Res now', Res);
-     for (let i of error_gen(vec.length)) {
+     for (let i of errorGenerator(vec.length)) {
         if (i != 0) {
             let error_vec = (parseInt(vec, 2) ^ parseInt(i, 2)).toString(2);
-            //  console.log('вектор ошибки ', error_vec)
             let syndrome = division(error_vec, pol);
             if (syndrome !== '000') {
                 let pl = i.replace(/0/g, '');
@@ -78,14 +100,14 @@ const MainPage = () => {
      return Res;
   }
 
-  function coding(vec: string, pol: string) {
-    let new_vec = vec + '0'.repeat(pol.length - 1);
+  function coding(vec: string, pol: string) { // Кодирование
+    {let new_vec = vec + '0'.repeat(pol.length - 1);
     let remainder = division(new_vec, pol);
     console.log(vec + remainder)
-    return vec + remainder;
- }
+    return vec + remainder;}
+  }
 
-  function division(a: string, b: string) {
+  function division(a: string, b: string) { // Деление полиномов
     if (parseInt(b, 2) === 0) {
         throw new Error("ZeroDivisionError");
     }
@@ -107,12 +129,56 @@ const MainPage = () => {
     return remainder;
  }
 
+  const setRandomError = () => {
+    let randomNumber = Math.floor(Math.random() * 7);
+    let errorCodeArr = coding(codeStringValue, pol).split('')
+    console.log(errorCodeArr)
+    console.log('-------------')
+    errorCodeArr[randomNumber] = errorCodeArr[randomNumber] === '0' ? '1': '0';
+    setValueWithError({errorIndex: errorCodeArr.length - 1 - randomNumber, value: Number(errorCodeArr.join(''))})
+    decode({errorIndex: errorCodeArr.length - 1 - randomNumber, value: Number(errorCodeArr.join(''))})
+  }
+
+  const getAcceptedPolynomial = (first: string, second: string): string => {
+    const maxLength = Math.max(first.length, second.length);
+    const paddedFirst = first.padStart(maxLength, '0');
+    const paddedSecond = second.padStart(maxLength, '0');
+    console.log('padded', paddedFirst, paddedSecond)
+   
+    let result = '';
+   
+    for (let i = maxLength - 1; i >= 0; i--) {
+     const sum = parseInt(paddedFirst[i], 2) ^ parseInt(paddedSecond[i], 2);
+     result = (sum % 2) + result;
+    }
+   
+    return result;
+   };
+   
+
+  const decode = (error: RandomErrorData) => {
+    if (error?.errorIndex !== undefined) {
+      const vector = errorVectors.get(error.errorIndex);
+      let accepted;
+      if (vector !== undefined) {
+        setErrorVector(vector);
+        accepted = getAcceptedPolynomial(coding(codeStringValue, pol), vector) // формируем принятый полином
+        setAcceptedVector(accepted)
+      }
+      console.log('accepted', accepted)
+      console.log(coding(codeStringValue, pol), '+', errorVectors.get(error.errorIndex))
+    }
+  }
+  
+
   const handleTestButtonClick = () => {
-    console.log('test button was clicked')
+    setIsTestButtonClicked(true)
+    setRandomError();
+    // console.log('res', getAcceptedPolynomial('1010011', '100000'))
   }
 
   const handleBuildButtonClick = () => {
-    let encoded_vec = coding(inf_vec, pol);
+    let encoded_vec = coding(codeStringValue, pol);
     let Res = errors(encoded_vec, pol);
     console.log(Res)
     let result: TableData[] = []
@@ -149,8 +215,17 @@ const MainPage = () => {
           
         </div>
       </Form>
-
-      {table.length === 7 && <Table applications={table}/>}
+     { isTestButtonClicked && <><h4 className={styles['main__page-subtitle']}>Исходный код: {codeStringValue}</h4>
+      <h4 className={styles['main__page-subtitle']}>Закодированный код: {coding(codeStringValue, pol)}</h4>
+      <h4 className={styles['main__page-subtitle']}>Случайная ошибка в {valueWithError?.errorIndex} разряде: {valueWithError?.value}</h4>
+      <h4 className={styles['main__page-subtitle']}>Вектор ошибки: {errorVector}</h4>
+      <h4 className={styles['main__page-subtitle']}>Принятый полином: {acceptedVector}</h4>
+      </>}
+      {table.length === 7 && 
+      <div>
+        <h4 className={styles['main__page-subtitle']}>Таблица результатов:</h4>
+        <Table applications={table}/>
+      </div>}
       </div>
     </div>
   )
