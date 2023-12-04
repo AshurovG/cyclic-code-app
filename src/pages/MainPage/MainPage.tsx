@@ -38,8 +38,10 @@ const MainPage = () => {
   const [acceptedVector, setAcceptedVector] = useState('');
   const [errorSyndrome, setErrorSyndrome] = useState('');
   const [table, setTable] = useState<TableData[]>([])
-  const [isTestButtonClicked, setIsTestButtonClicked] = useState(false)
   const [correctedCode, setCorrectedCode] = useState('')
+
+  const [isTestButtonClicked, setIsTestButtonClicked] = useState(false)
+  const [isBuildButtonClicked, setIsBuildButtonClicked] = useState(false)
 
   function factorial(n: any) {
     let result = 1;
@@ -169,22 +171,25 @@ const MainPage = () => {
   
 
   const handleTestButtonClick = () => {
+    setIsBuildButtonClicked(false)
     setIsTestButtonClicked(true)
     setRandomError();
   }
 
   const handleBuildButtonClick = () => {
+    setIsTestButtonClicked(false)
+    setIsBuildButtonClicked(true)
     let encoded_vec = coding(codeStringValue, generatingPolynomial);
     let Res = errors(encoded_vec, generatingPolynomial);
     console.log(Res)
     let result: TableData[] = []
     for (let i in Res) {
-      let osh = Res[i];
+      let errorCount = Res[i];
       if (Number(i) == 4){ 
-        osh = osh - 1
+        errorCount = errorCount - 1
       }
-      let oshmax = factorial(7) / (factorial(i) * factorial(7 - Number(i)));
-      result.push({multiplicity: Number(i), totalErrorsCount: oshmax, detectedErrorsCount: osh, result: osh / oshmax})
+      let allErrorCount = factorial(7) / (factorial(i) * factorial(7 - Number(i)));
+      result.push({multiplicity: Number(i), totalErrorsCount: allErrorCount, detectedErrorsCount: errorCount, result: errorCount / allErrorCount})
     }
 
     setTable(result)
@@ -220,7 +225,7 @@ const MainPage = () => {
       <h4 className={styles['main__page-subtitle']}>Исправили код после обнаружения ошибки: {correctedCode}</h4>
 
       </>}
-      {table.length === 7 && 
+      {isBuildButtonClicked && 
       <div>
         <h4 className={styles['main__page-subtitle']}>Таблица результатов:</h4>
         <Table applications={table}/>
